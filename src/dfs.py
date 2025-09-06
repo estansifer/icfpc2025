@@ -43,13 +43,13 @@ class Graph:
         for back_edge in range(DOORS):
             new_path = path + str(back_edge)
             res = utils.guess(new_path)
-            self.letter[v] = res[-3]
+            self.letter[v] = res[-2]
             parent_letter = self.letter[self.parent[v]]
             if res[-1] != parent_letter and back_edge > 0:
                 continue
             new_path2 = path[:-1] + "[" + str(utils.different(parent_letter)) + "]" + str(self.edge_from_parent[v]) + str(back_edge)
             res2 = utils.guess(new_path2)
-            if res[-3] != res2[-3]:
+            if res[-2] != res2[-2]:
                 return -1
             if res[-1] == parent_letter and res2[-1] != parent_letter:
                 return back_edge
@@ -84,11 +84,11 @@ class Graph:
         # print(dfs_path)
         path_sum = path_te + "[" + str(utils.different(self.letter[orgv])) + "]" + path_back + dfs_path
         res = utils.guess(path_sum)
-        print(path_sum)
-        print(dfs_path)
-        print(order)
-        print(res)
-        print(pocz_len)
+        # print(path_sum)
+        # print(dfs_path)
+        # print(order)
+        # print(res)
+        # print(pocz_len)
         diff = 2 * pocz_len + 1
         for i in range(diff, len(res)):
             print(order[i - diff])
@@ -123,7 +123,7 @@ class Graph:
                 self.edge[self.n][edge_back] = v
                 self.mst[v].append((self.n, e))
             else:
-                utils.print_green("Merging with", result)
+                utils.print_green("Merging with: " + str(result))
                 self.edge[v][e] = result
                 self.edge[result][edge_back] = v
         # for v in range(self.n + 1):
@@ -156,6 +156,7 @@ class Graph:
                         "door": backdoor
                     }
                 })
+        return map
 
 
 def main(n):
@@ -163,7 +164,7 @@ def main(n):
         interface.select(PROBLEM_NAME)
     g = Graph(n)
     g.main_loop()
-    print(g.answer())
+    # print(g.answer())
     if utils.prod:
         interface.guess(g.answer())
 
