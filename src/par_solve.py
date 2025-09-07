@@ -65,6 +65,16 @@ class Graph:
                                 n2.adj_back[j] = i
                                 n.adj_back[i] = j
                                 break
+
+        if self.number_missing_edges() == 1:
+            # Missing a self-loop, nothing else
+            for n in self.nodes:
+                for i in range(6):
+                    if n.adj[i] is None:
+                        n.adj[i] = n
+                        n.adj_back[i] = i
+                        reverse_edges_deduced += 1
+
         print('Reverse edges deduced:', reverse_edges_deduced)
         print('Reverse edges guessed:', reverse_edges_guessed)
 
@@ -89,7 +99,8 @@ class Graph:
                 'connections' : connections
             }
 
-        interface.guess(map)
+        result = interface.guess(map)
+        print('Correct?', result)
 
 def solve(task):
     N = task.N
@@ -160,9 +171,10 @@ def solve(task):
     print('Missing edges:', graph.number_missing_edges())
 
     if graph.number_missing_edges() == 0:
+        print('Submitting!')
         graph.submit_guess()
 
 if __name__ == '__main__':
-    t = tasks.task_list[0]
+    t = tasks.task_list[5]
     interface.select(t.name)
     solve(t)
