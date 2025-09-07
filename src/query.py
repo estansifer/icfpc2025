@@ -205,9 +205,9 @@ def parallel_queries(task = None, k = 4):
             cur_id += 1
 
         for i in range(k):
-            actions[i].append(d)
             if not (code is None):
                 actions[i].append(marks[code[i]])
+            actions[i].append(d)
 
     queries = [Query(task).custom_query(a) for a in actions]
     return queries
