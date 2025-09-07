@@ -181,7 +181,35 @@ def interpret_parallel_queries(graph, qs):
         else:
             graph.paint_node(cur_node, code)
 
-    return graph
+def interpret_parallel_queries_again(graph, qs):
+    last_paint = -1
+    for i, act in enumerate(qs[0].query):
+        if not act.is_door:
+            last_paint = i
+
+    prev_node = None
+    cur_node = None
+
+    for i, act in enumerate(qs[0].query):
+        code = tuple([q.raw_response[i + 1] for q in qs])
+        if i < last_paint:
+            continue
+
+        if i == last_paint:
+            assert not act.is_door
+            cur_node = graph.code2node[code]
+            continue
+
+        assert act.is_door
+        prev_node = cur_node
+        cur_node = graph.code2node[code]
+
+        # Assign edge
+        if prev_node.adj[act.d] is None:
+            prev_node.adj[act.d] = cur_node
+        else:
+            # Previously seen edge
+            assert prev_node.adj[act.d] is cur_node
 
 def build_dfs_tree(graph, N):
     path = []
@@ -220,6 +248,7 @@ def solve(task):
     graph.print_info()
 
     dfs_path = build_dfs_tree(graph, task.N)
+    print(dfs_path)
 
     # while graph.number_missing_edges > 0:
         # utils.print_green("Edges left: " + str(graph.number_missing_edges) + ". Trying again")
