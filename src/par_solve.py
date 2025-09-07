@@ -278,7 +278,7 @@ def solve(task, num_tries = 6):
 
     if len(graph.nodes) < task.N:
         utils.print_red(f'Only found {len(graph.nodes)} of {task.N} nodes')
-        return
+        exit(1)
 
     dfs_path = build_dfs_tree(graph, task.N, k)
     print_path(graph, dfs_path)

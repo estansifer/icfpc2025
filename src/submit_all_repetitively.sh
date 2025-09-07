@@ -2,8 +2,8 @@
 
 prog="python3"
 name="par_solve.py"
-arg="8"
-tries="3"
+arg="15"
+tries="7"
 
 while true; do
     echo "Running $prog $name with arg $arg"
