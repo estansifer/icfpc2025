@@ -145,6 +145,8 @@ class Graph:
 
         result = interface.guess(map)
         print('Correct?', result)
+        if not result:
+            exit(1)
 
 def choose_k(task):
     N = task.N
