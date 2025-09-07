@@ -30,11 +30,16 @@ M = 1442968193 # prime number
 class IntList:
     def __init__(self, values):
         self.n = len(values)
+        assert self.n > 0
         self.values = [int(v) for v in values]
         x = 0
         for v in self.values:
             x = (x * 6 + v) % M
         self.x = x
+
+    def drop_last(self):
+        assert self.n > 1
+        return IntList(self.values[:-1])
 
     def __hash__(self):
         return self.x
@@ -46,15 +51,17 @@ class IntList:
         return not (self == other)
 
     def __str__(self):
-        return str(self.values)
+        # return str(self.values)
+        return ''.join([str(v) for v in self.values])
 
     def __repr__(self):
-        return str(self.values)
+        return str(self)
 
 class PathWithLabels:
     def __init__(self, path, labels):
         self.path = path
         self.labels = labels
+        self.n = path.n
         assert path.n + 1 == labels.n
 
     def __hash__(self):

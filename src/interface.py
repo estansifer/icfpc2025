@@ -19,7 +19,7 @@ def get(endpoint, **params):
     return j
 
 def post(endpoint, j):
-    time.sleep(1)
+    time.sleep(0.1)
     print(f"Posting {j} to {endpoint}")
     r = requests.post(url + endpoint, json = j, headers = headers)
     j = r.json()
@@ -66,7 +66,7 @@ def guess(map):
     return j['correct']
 
 if __name__ == '__main__':
-    pass
+    select(tasks.task_list[1].name)
     # register()
     # select(tasks.task_list[0][0])
     # explore(['0123423123021403240'])

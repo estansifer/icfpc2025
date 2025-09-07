@@ -43,6 +43,14 @@ class Visit:
         self.prev = None # Visit
         self.next = None # Visit
 
+    def ahead(self, k):
+        if k == 0:
+            return self
+        if k > 0:
+            return self.next.ahead(k - 1)
+        if k < 0:
+            return self.prev.ahead(k + 1)
+
     # Go forwards an additional l steps, returns (path, labels)
     def forward_path_and_labels(self, l):
         i = self.index
@@ -88,12 +96,24 @@ class Query:
     def custom_query(self, actions, trim_if_too_long = True, error_if_too_short = True):
         self.query = list(actions)
         if trim_if_too_long:
-            self.query = self.query[:self.query_length]
-        if error_if_too_short:
-            assert len(self.query) == self.query_length
+            self.query = []
+            num_doors = 0
+            for act in actions:
+                if act.is_door:
+                    num_doors += 1
+                if num_doors > self.query_length:
+                    break
 
-        self.query_doors_only = [q for q in self.query if q.is_door]
+                self.query.append(act)
+        else:
+            self.query = list(actions)
+
+        self.query_doors_only = [act for act in self.query if act.is_door]
         self.n = len(self.query_doors_only)
+        if error_if_too_short:
+            assert self.n == self.query_length
+        else:
+            assert self.n <= self.query_length
 
         self.query_string = ''.join([str(act) for act in self.query])
 
@@ -102,6 +122,23 @@ class Query:
         while len(q) < self.query_length:
             d = r(doors, [5, 5, 2, 2, 2, 2])[0]
             q.append(d)
+
+        self.custom_query(q)
+
+    def random_query2(self):
+        q = []
+        while len(q) < self.query_length:
+            if random.random() < 0.2:
+                q.append(r(doors)[0])
+                while random.random() < 0.1:
+                    q.append(r(doors)[0])
+
+            if random.random() < 0.5:
+                q.append(doors[0])
+                q.append(doors[1])
+            else:
+                q.append(doors[1])
+                q.append(doors[0])
 
         self.custom_query(q)
 
@@ -147,4 +184,6 @@ if __name__ == '__main__':
     q = Query()
     print(q.query_string)
     q.custom_query([Door(0), Mark(3), Door(1)], error_if_too_short = False)
+    print(q.query_string)
+    q.random_query2()
     print(q.query_string)
