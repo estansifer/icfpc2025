@@ -5,7 +5,7 @@ import tasks
 import utils
 import interface
 
-verbose_graph_info = False
+verbose_graph_info = True
 
 class Node:
     def __init__(self, index, label, code):
@@ -283,7 +283,7 @@ def solve(task):
         qs = query.parallel_queries_custom(dfs_path, k)
         query_count = query.submit_batch(qs)
         utils.print_green(f"Current query count: {query_count}")
-        if query_count > 60:
+        if query_count > 42:
             utils.print_red(f'Did {query_count} queries and still failed, sad')
             return
 
