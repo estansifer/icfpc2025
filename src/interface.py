@@ -4,6 +4,8 @@ import time
 import secr
 import tasks
 
+verbose = False
+
 url = 'https://31pwr5t6ij.execute-api.eu-west-2.amazonaws.com/'
 
 headers =  {
@@ -13,18 +15,20 @@ headers =  {
     }
 
 def get(endpoint, **params):
-    time.sleep(1)
+    time.sleep(0.1)
     r = requests.get(url + endpoint, data = params, headers = headers)
     j = r.json()
     return j
 
 def post(endpoint, j):
-    time.sleep(0.01)
-    print(f"Posting {j} to {endpoint}")
+    time.sleep(0.1)
+    if verbose:
+        print(f"Posting {j} to {endpoint}")
     r = requests.post(url + endpoint, json = j, headers = headers)
     j = r.json()
-    print("Result:")
-    print(j)
+    if verbose:
+        print("Result:")
+        print(j)
     return j
 
 def register():

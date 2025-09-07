@@ -5,7 +5,7 @@ import tasks
 import utils
 import interface
 
-IL = utils.IntList
+verbose_graph_info = False
 
 class Node:
     def __init__(self, index, label, code):
@@ -99,6 +99,9 @@ class Graph:
         print('Reverse edges guessed:', reverse_edges_guessed)
 
     def print_info(self):
+        if not verbose_graph_info:
+            return
+
         def pr_node(n):
             if n is None:
                 return '  -'
@@ -146,8 +149,8 @@ def choose_k(task):
         k = 4
     if N < 15:
         k = 3
-    if N <= 12:
-        k = 2
+    # if N <= 12:
+        # k = 2
     return k
 
 def interpret_parallel_queries(graph, qs):
@@ -239,7 +242,7 @@ def build_dfs_tree(graph, N, k):
             continue
         v = graph.nodes[v]
         if used_labels[v.label]:
-            utils.print_red("ERROR: Cannot uniqly mark nodes!!! Found: " + str(num_vis) + "\nRepreated label: " + str(v.label))
+            utils.print_red("ERROR: Cannot uniquely mark nodes!!! Found: " + str(num_vis) + "\nRepreated label: " + str(v.label))
             exit(1)
         used_labels[v.label] = True
         graph.code2node[tuple([v.label] * k)] = v
@@ -253,11 +256,10 @@ def print_path(graph, path):
         else:
             print("[" + str(graph.code2node[x.m].index) + "]", end=" ")
     print()
-            
 
 def solve(task):
-    # k = choose_k(task)
-    k = 5
+    k = choose_k(task)
+    utils.print_green(f'Solving task {task.name} with {task.N} nodes and k = {k}')
 
     qs = query.parallel_queries(task, k)
     query.submit_batch(qs)
@@ -269,7 +271,7 @@ def solve(task):
     graph.print_info()
 
     if len(graph.nodes) < task.N:
-        utils.print_red(f'Only found {len(graph.node)} of {task.N} nodes')
+        utils.print_red(f'Only found {len(graph.nodes)} of {task.N} nodes')
         return
 
     dfs_path = build_dfs_tree(graph, task.N, k)
@@ -280,7 +282,8 @@ def solve(task):
 
         qs = query.parallel_queries_custom(dfs_path, k)
         query_count = query.submit_batch(qs)
-        if query_count > 30:
+        utils.print_green(f"Current query count: {query_count}")
+        if query_count > 60:
             utils.print_red(f'Did {query_count} queries and still failed, sad')
             return
 
