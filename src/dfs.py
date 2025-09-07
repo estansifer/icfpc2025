@@ -1,9 +1,14 @@
-import utils, interface, tasks
+import utils, interface, tasks, sys, time
 
 task_no = 1
 DOORS = 6
-N = tasks.task_list[task_no].N
-PROBLEM_NAME = tasks.task_list[task_no].name
+N = 4
+PROBLEM_NAME = "probatio"
+
+start_time = time.time()
+global_back_avg = 0
+global_back_num = 0
+total_q = 0
 
 class Graph:
     # n -> num known vertices
@@ -41,6 +46,8 @@ class Graph:
     def find_backwards_edge(self, v):
         utils.print_green("Finding backwards edge")
         path = self.path_to_edge(v)
+        global total_q
+        total_q = 0
         paths = []
         paths2 = []
         for back_edge in range(DOORS):
@@ -51,6 +58,7 @@ class Graph:
             if back_edge == 0:
                 paths2.append(new_path2)
         paths.append(paths2[0])
+        total_q += len(paths) + 1
         res = utils.guess(paths)
         paths2 = []
 
@@ -62,6 +70,7 @@ class Graph:
             new_path2 = path[:-1] + "[" + str(utils.different(parent_letter)) + "]" + str(self.edge_from_parent[v]) + str(back_edge)
             if back_edge != 0 and res[back_edge][-1] == parent_letter:
                 paths2.append(new_path2)
+        total_q += len(paths2) + 1
         res2 = utils.guess(paths2)
         itt = 0
         for back_edge in range(DOORS):
@@ -129,7 +138,12 @@ class Graph:
             # Add to mst
             self.parent[self.n + 1] = v
             self.edge_from_parent[self.n + 1] = e
+
             edge_back = self.find_backwards_edge(self.n + 1)
+            global global_back_avg
+            global global_back_num
+            global_back_avg += total_q
+            global_back_num += 1
             self.edge_to_parent[self.n + 1] = edge_back
 
             if edge_back == -1:
@@ -189,6 +203,17 @@ def main(n):
     g.main_loop()
     # print(g.answer())
     if utils.prod:
-        interface.guess(g.answer())
+        print("Problem:", PROBLEM_NAME, file=sys.stderr)
+        print("N:", n, file=sys.stderr)
+        print("Correct:", interface.guess(g.answer()), file=sys.stderr)
+        print("Query count:", utils.total_queries, file=sys.stderr)
+        print("Avg guesses for back:", global_back_avg / global_back_num, file=sys.stderr)
+        print("Time taken:", time.time() - start_time, file=sys.stderr)
+        print("", file=sys.stderr)
+
+if len(sys.argv) > 1:
+    task_no = int(sys.argv[1])
+N = tasks.task_list[task_no].N
+PROBLEM_NAME = tasks.task_list[task_no].name
 
 main(N)

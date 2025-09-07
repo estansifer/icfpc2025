@@ -1,9 +1,14 @@
-import utils, interface, tasks, sys
+import utils, interface, tasks, sys, time
 
 task_no = 1
 DOORS = 6
 N = 4
 PROBLEM_NAME = "probatio"
+
+start_time = time.time()
+global_back_avg = 0
+global_back_num = 0
+total_q = 0
 
 class Graph:
     # n -> num known vertices
@@ -43,17 +48,21 @@ class Graph:
         utils.print_green("Finding backwards edge")
         path = self.path_to_edge(v)
         no_repeat = False
+        global total_q
+        total_q = 0
         for back_edge in range(DOORS):
             if back_edge == DOORS - 1 and no_repeat:
                 return back_edge
             new_path = path + str(back_edge)
             res = utils.guess_unbatched(new_path)
+            total_q += 2
             self.letter[v] = res[-2]
             parent_letter = self.letter[self.parent[v]]
             if res[-1] != parent_letter and back_edge > 0:
                 continue
             new_path2 = path[:-1] + "[" + str(utils.different(parent_letter)) + "]" + str(self.edge_from_parent[v]) + str(back_edge)
             res2 = utils.guess_unbatched(new_path2)
+            total_q += 2
             if res[-2] != res2[-2]:
                 return -1
             no_repeat = True
@@ -114,7 +123,12 @@ class Graph:
             # Add to mst
             self.parent[self.n + 1] = v
             self.edge_from_parent[self.n + 1] = e
+            
             edge_back = self.find_backwards_edge(self.n + 1)
+            global global_back_avg
+            global global_back_num
+            global_back_avg += total_q
+            global_back_num += 1
             self.edge_to_parent[self.n + 1] = edge_back
 
             if edge_back == -1:
@@ -174,7 +188,13 @@ def main(n):
     g.main_loop()
     # print(g.answer())
     if utils.prod:
-        interface.guess(g.answer())
+        print("Problem:", PROBLEM_NAME, file=sys.stderr)
+        print("N:", n, file=sys.stderr)
+        print("Correct:", interface.guess(g.answer()), file=sys.stderr)
+        print("Query count:", utils.total_queries, file=sys.stderr)
+        print("Avg guesses for back:", global_back_avg / global_back_num, file=sys.stderr)
+        print("Time taken:", time.time() - start_time, file=sys.stderr)
+        print("", file=sys.stderr)
 
 
 if len(sys.argv) > 1:

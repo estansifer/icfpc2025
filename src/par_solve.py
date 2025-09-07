@@ -107,7 +107,7 @@ class Graph:
                 return '-'
             else:
                 return str(i)
-        print(f'Graph with {len(self.nodes)} nodes, missing {self.number_missing_edges()} edges')
+        utils.print_green(f'Graph with {len(self.nodes)} nodes, missing {self.number_missing_edges()} edges')
         for node in self.nodes:
             adjs = ''.join([pr_node(n) for n in node.adj])
             adj_backs = ''.join([pr_back(i) for i in node.adj_back])
@@ -136,42 +136,6 @@ class Graph:
 
         result = interface.guess(map)
         print('Correct?', result)
-
-def solve4(task):
-    N = task.N
-    assert N == 3
-
-    q = query.Query(task)
-    q.submit()
-
-    graph = Graph(1)
-    code2node = {
-            0 : graph.new_node(0),
-            1 : graph.new_node(1),
-            2 : graph.new_node(2)
-        }
-    prev_node = None
-    cur_node = code2node[q.raw_response[0]]
-
-    for i, act in enumerate(q.query):
-        prev_node = cur_node
-        code = q.raw_response[i + 1]
-        cur_node = code2node[code]
-
-        if prev_node.adj[act.d] is None:
-            prev_node.adj[act.d] = cur_node
-        else:
-            assert prev_node.adj[act.d] is cur_node
-
-    print('Missing edges:', graph.number_missing_edges())
-    graph.compute_reverse_edges()
-    for node in graph.nodes:
-        print('    ', node.index, node.label, node.code, [n.index for n in node.adj])
-    print('Missing edges:', graph.number_missing_edges())
-
-    if graph.number_missing_edges() == 0:
-        print('Submitting!')
-        graph.submit_guess()
 
 def choose_k(task):
     N = task.N
@@ -217,6 +181,30 @@ def interpret_parallel_queries(graph, qs):
 
     return graph
 
+def build_dfs_tree(graph, N):
+    path = []
+    num_vis = 0
+    vis = [False] * N
+    def dfs(v, back):
+        nonlocal num_vis
+        num_vis += 1
+        vis[v.index] = True
+        path.append(v.code)
+        for i in v.bi_adjs():
+            u = v.adj[i]
+            print(u)
+            if vis[u.index]:
+                continue
+            path.append(query.doors[i])
+            dfs(u, v.adj_back[i])
+        if back != -1:
+            path.append(query.doors[back])
+    dfs(graph.nodes[0], -1)
+    print(num_vis)
+    if num_vis != N:
+        utils.print_red("WARNING: Not all vertices in the spanning tree!!!")
+    return path
+
 def solve(task):
     # k = choose_k(task)
     k = 5
@@ -231,8 +219,16 @@ def solve(task):
     graph.compute_reverse_edges()
     graph.print_info()
 
+    dfs_path = build_dfs_tree(graph, task.N)
+    print(dfs_path)
+
+    # while graph.number_missing_edges > 0:
+        # utils.print_green("Edges left: " + str(graph.number_missing_edges) + ". Trying again")
+        # queries = query.parallel_queries_custom(path, k=k)
+        # server_resp = query.submit_batch(queries)
+
     if graph.number_missing_edges() == 0:
-        print('Submitting!')
+        utils.print_green('Submitting!')
         graph.submit_guess()
 
 if __name__ == '__main__':

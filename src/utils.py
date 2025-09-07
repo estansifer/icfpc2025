@@ -1,10 +1,14 @@
 import interface
 
 prod = True
+total_queries = 0
 
 def guess(path):
     if prod:
-        return interface.explore(path)['results']
+        global total_queries
+        res = interface.explore(path)
+        total_queries = res['queryCount']
+        return res['results']
     else:
         print(path)
         res = input()
@@ -12,7 +16,10 @@ def guess(path):
 
 def guess_unbatched(path):
     if prod:
-        return interface.explore([path])['results'][0]
+        global total_queries
+        res = interface.explore([path])
+        total_queries = res['queryCount']
+        return res['results'][0]
     else:
         print(path)
         res = input()
@@ -32,6 +39,9 @@ def different(i):
 
 def print_green(strr):
     print("\033[32m" + strr + "\033[0m")
+
+def print_red(strr):
+    print("\033[31m" + strr + "\033[0m")
 
 M = 1442968193 # prime number
 
