@@ -19,7 +19,7 @@ def get(endpoint, **params):
     return j
 
 def post(endpoint, j):
-    time.sleep(0.1)
+    time.sleep(0.01)
     print(f"Posting {j} to {endpoint}")
     r = requests.post(url + endpoint, json = j, headers = headers)
     j = r.json()
