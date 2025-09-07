@@ -242,10 +242,13 @@ def solve(task):
 
     graph = Graph()
     interpret_parallel_queries(graph, qs)
-
     graph.print_info()
     graph.compute_reverse_edges()
     graph.print_info()
+
+    if len(graph.nodes) < task.N:
+        print_red(f'Only found {len(graph.node)} of {task.N} nodes')
+        return
 
     dfs_path = build_dfs_tree(graph, task.N)
     print(dfs_path)
@@ -255,9 +258,16 @@ def solve(task):
         # queries = query.parallel_queries_custom(path, k=k)
         # server_resp = query.submit_batch(queries)
 
+    qs = query.parallel_queries_custom(dfs_path, k)
+    query.submit_batch(qs)
+    interpret_parallel_queries_again(graph, qs)
+    graph.print_info()
+    graph.compute_reverse_edges()
+    graph.print_info()
+
     if graph.number_missing_edges() == 0:
         utils.print_green('Submitting!')
-        graph.submit_guess()
+        # graph.submit_guess()
 
 if __name__ == '__main__':
     task_no = 7
