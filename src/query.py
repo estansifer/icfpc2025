@@ -2,6 +2,7 @@ import random
 
 import interface
 import tasks
+import utils
 
 r = random.choices
 
@@ -9,19 +10,55 @@ class Door:
     def __init__(self, d):
         self.d = d
         self.is_door = True
+    
+    def __int__(self):
+        return self.d
 
     def __str__(self):
         return str(self.d)
-
+    
 doors = [Door(d) for d in range(6)]
 
 class Mark:
     def __init__(self, m):
         self.m = m
         self.is_door = False
+    
+    def __int__(self):
+        return self.m
 
     def __str__(self):
         return f'[{self.m}]'
+
+# Represents a specific node visited at a specific time within a specific expedition
+class Visit:
+    # q: Query
+    # index: number of doors previously traversed
+    def __init__(self, q, index):
+        self.query = q
+        self.index = index
+        assert (index >= 0) and (index <= q.n)
+
+        self.label = q.response[index]
+        self.prev = None # Visit
+        self.next = None # Visit
+
+    # Go forwards an additional l steps, returns (path, labels)
+    def forward_path_and_labels(self, l):
+        i = self.index
+        if i + l > self.query.n:
+            return None
+        path = utils.IntList(self.query.query_doors_only[i : i + l])
+        labels = utils.IntList(self.query.response[i : i + l + 1])
+        return (path, labels)
+
+    def all_forward_path_and_labels(self, max_length):
+        result = []
+        for l in range(1, max_length + 1):
+            if self.index + l > self.query.n:
+                break
+            result.append(self.forward_path_and_labels(l))
+        return result
 
 class Query:
     def __init__(self, task = None):
@@ -31,10 +68,20 @@ class Query:
         self.N = task.N
         self.query_length = task.query_length
 
+        # number of door transitions in the query
+        self.n = None                                
+        # sequence of actions
         self.query = None
+        # sequence of actions, excluding markings
         self.query_doors_only = None
+        # converted to string for sending to server
         self.query_string = None
+        # sequence of ints returned by server
+        self.raw_response = None
+        # sequence of ints returned by server, excluding markings
         self.response = None
+        # sequence of Visit
+        self.visits = None
 
         self.random_query1()
 
@@ -46,6 +93,7 @@ class Query:
             assert len(self.query) == self.query_length
 
         self.query_doors_only = [q for q in self.query if q.is_door]
+        self.n = len(self.query_doors_only)
 
         self.query_string = ''.join([str(act) for act in self.query])
 
@@ -67,7 +115,12 @@ class Query:
             if self.query[i].is_door:
                 self.response.append(response[i + 1])
 
-        assert len(self.query_doors_only) + 1 == len(self.response)
+        assert self.n + 1 == len(self.response)
+
+        self.visits = [Visit(self, i) for i in range(self.n + 1)]
+        for i in range(self.n):
+            self.visits[i].next = self.visits[i + 1]
+            self.visits[i + 1].prev = self.visits[i]
 
     def submit(self):
         j = interface.explore([self.query_string])

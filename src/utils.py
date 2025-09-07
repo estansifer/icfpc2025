@@ -24,3 +24,51 @@ def different(i):
 
 def print_green(strr):
     print("\033[32m" + strr + "\033[0m")
+
+M = 1442968193 # prime number
+
+class IntList:
+    def __init__(self, values):
+        self.n = len(values)
+        self.values = [int(v) for v in values]
+        x = 0
+        for v in self.values:
+            x = (x * 6 + v) % M
+        self.x = x
+
+    def __hash__(self):
+        return self.x
+
+    def __eq__(self, other):
+        return self.n == other.n and self.x == other.x
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __str__(self):
+        return str(self.values)
+
+    def __repr__(self):
+        return str(self.values)
+
+class PathWithLabels:
+    def __init__(self, path, labels):
+        self.path = path
+        self.labels = labels
+        assert path.n + 1 == labels.n
+
+    def __hash__(self):
+        return hash((self.path, self.labels))
+
+    def __eq__(self, other):
+        return self.path == other.path and self.labels == other.labels
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __str__(self):
+        s = '(' + str(self.labels.values[0]) + ')'
+        for i in range(self.path.n):
+            s += ' ' + str(self.path.values[i])
+            s += ' (' + str(self.labels.values[i + 1]) + ')'
+        return s

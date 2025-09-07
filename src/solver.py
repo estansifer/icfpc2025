@@ -1,35 +1,35 @@
 import tasks
 import query
+import utils
 
-class Key:
-    def __init__(self, doors, labels):
-        assert len(labels) == len(doors) + 1
-        self.k = len(doors)
-        self.doors = list(doors)
-        self.labels = list(labels)
-        x = 5 + labels[0]
-        for i in range(self.k):
-            x = x * 6
-            x = x + doors[i]
-            x = x * 4
-            x = x + labels[i + 1]
-        self.x = x
+class NodeInfo:
+    def __init__(self, visits, max_forward = 5):
+        self.visits = list(visits)
+        assert len(visits) > 0
+        self.label = visits[0].label
+        for v in visits:
+            assert v.label == self.label
 
-    def __hash__(self):
-        return self.x
+        # [NodeInfo | None]
+        self.neighbors = [None] * 6
 
-    def __eq__(self, other):
-        return self.x == other.x
-
-    def __ne__(self, other):
-        return not(self == other)
-
-    def __str__(self):
-        s = '(' + str(self.labels[0]) + ')'
-        for i in range(self.k):
-            s += ' ' + str(self.doors[i])
-            s += ' (' + str(self.labels[i + 1]) + ')'
-        return s
+        self.consistent = True
+        # path -> labels | set[labels]
+        # paths and labels are stored as IntLists
+        signature = {}
+        for v in visits:
+            for path, labels in v.all_forward_path_and_labels(max_forward):
+                if path in signature:
+                    if type(signature[path]) is set:
+                        signature[path].add(labels)
+                    else:
+                        # it is an IntList. Change to a set of IntLists
+                        if signature[path] != labels:
+                            self.consistent = False
+                            signature[path] = {signature[path], labels}
+                else:
+                    signature[path] = labels
+        self.signature = signature
 
 class Knowledge:
     def __init__(self, task = None):
@@ -38,34 +38,41 @@ class Knowledge:
         self.task = task
         self.N = task.N
         self.queries = []
-        self.len2key2pos = {}
+        self.visits = []
+        self.pl2visits = {}
+        self.pl2node = {}
 
-    def submit_query(self):
-        q = query.Query(self.task)
+    def submit_query(self, q = None):
+        if q is None:
+            q = query.Query(self.task)
         query_count = q.submit()
         self.queries.append(q)
+        self.visits.extend(q.visits)
         print('Query count:', query_count)
-        self.compute_key2pos(max_length = 3)
+        self.compute_pl2node(max_length = 4)
 
-    def compute_key2pos(self, max_length = 1):
-        self.len2key2pos = {}
-        for l in range(1, max_length + 1):
-            d = {}
-            self.len2key2pos[l] = d
-            for q in self.queries:
-                n = q.query_length
-                for i in range(n - l + 1):
-                    k = Key(q.query[i : i + l], q.response[i : i + l + 1])
-                    if not (k in d):
-                        d[k] = []
-                    d[k].append((q, i))
+    def compute_pl2node(self, max_length = 4):
+        self.pl2visits = {}
+        for v in self.visits:
+            for path, labels in v.all_forward_path_and_labels(max_length):
+                pl = utils.PathWithLabels(path, labels)
+                if pl in self.pl2visits:
+                    self.pl2visits[pl].append(v)
+                else:
+                    self.pl2visits[pl] = [v]
 
-    def common_keys(self, l, most = 20):
-        d = self.len2key2pos[l]
-        xs = list(reversed(sorted(list(d.items()), key = lambda x : len(x[1]))))
+        self.pl2node = {}
+        for pl, visits in self.pl2visits.items():
+            self.pl2node[pl] = NodeInfo(visits, max_forward = 3)
+
+    def common_pl(self, most = 20):
+        xs = list(reversed(sorted(list(self.pl2node.items()), key = lambda x : len(x[1].visits))))
         for x in xs[:most]:
-            key, value = x
-            print(key, ':', len(value))
+            pl, node_info = x
+            print(pl, ':')
+            print('    consistent', node_info.consistent)
+            print('    signature:')
+            print(node_info.signature)
 
 k0 = Knowledge(tasks.task_list[0])
 k = lambda : Knowledge()
