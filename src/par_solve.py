@@ -1,3 +1,5 @@
+import sys
+
 import query
 import tasks
 import utils
@@ -192,7 +194,6 @@ def build_dfs_tree(graph, N):
         path.append(query.MultiMark(v.code))
         for i in v.bi_adjs():
             u = v.adj[i]
-            print(u.index)
             if vis[u.index]:
                 continue
             path.append(query.doors[i])
@@ -200,7 +201,6 @@ def build_dfs_tree(graph, N):
         if back != -1:
             path.append(query.doors[back])
     dfs(graph.nodes[0], -1)
-    print(num_vis)
     if num_vis != N:
         utils.print_red("WARNING: Not all vertices in the spanning tree!!!")
     return path
@@ -220,7 +220,6 @@ def solve(task):
     graph.print_info()
 
     dfs_path = build_dfs_tree(graph, task.N)
-    print(dfs_path)
 
     # while graph.number_missing_edges > 0:
         # utils.print_green("Edges left: " + str(graph.number_missing_edges) + ". Trying again")
@@ -232,6 +231,9 @@ def solve(task):
         graph.submit_guess()
 
 if __name__ == '__main__':
-    t = tasks.task_list[6]
+    task_no = 7
+    if len(sys.argv) > 1:
+        task_no = int(sys.argv[1])
+    t = tasks.task_list[task_no]
     interface.select(t.name)
     solve(t)
