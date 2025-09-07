@@ -1,8 +1,9 @@
-import utils, interface
+import utils, interface, tasks
 
+task_no = 1
 DOORS = 6
-N = 3
-PROBLEM_NAME = "probatio"
+N = tasks.task_list[task_no].N
+PROBLEM_NAME = tasks.task_list[task_no].name
 
 class Graph:
     # n -> num known vertices
@@ -91,7 +92,7 @@ class Graph:
         # print(pocz_len)
         diff = 2 * pocz_len + 1
         for i in range(diff, len(res)):
-            print(order[i - diff])
+            # print(order[i - diff])
             if self.letter[order[i - diff]] != res[i]:
                 return order[i - diff]
         return -1
@@ -132,10 +133,11 @@ class Graph:
 
     def answer(self):
         map = {
-            "rooms": self.letter[1:],
+            "rooms": self.letter[1:-1],
             "startingRoom": 0,
             "connections": []
         }
+        print(self.letter, map["rooms"])
         used = [[False] * 6 for _ in range(self.n + 1)]
         for v in range(1, self.n + 1):
             for e in range(6):
