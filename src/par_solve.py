@@ -5,7 +5,7 @@ import tasks
 import utils
 import interface
 
-verbose_graph_info = True
+verbose_graph_info = False
 
 class Node:
     def __init__(self, index, label, code):
@@ -51,7 +51,7 @@ class Graph:
                     count += 1
         return count
 
-    def compute_reverse_edges(self, guessing = False):
+    def compute_reverse_edges(self, guessing = False, full_guessing = False):
         reverse_edges_deduced = 0
         reverse_edges_guessed = 0
         for n in self.nodes:
@@ -86,14 +86,18 @@ class Graph:
                                     n.adj_back[i] = j
                                     break
 
-        if self.number_missing_edges() == 1:
+        missing_edges = self.number_missing_edges()
+        if missing_edges == 1 or full_guessing:
             # Missing a self-loop, nothing else
             for n in self.nodes:
                 for i in range(6):
                     if n.adj[i] is None:
                         n.adj[i] = n
                         n.adj_back[i] = i
-                        reverse_edges_deduced += 1
+                        if missing_edges == 1:
+                            reverse_edges_deduced += 1
+                        else:
+                            reverse_edges_guessed += 1
 
         print('Reverse edges deduced:', reverse_edges_deduced)
         print('Reverse edges guessed:', reverse_edges_guessed)
@@ -296,7 +300,7 @@ def solve(task, num_tries = 6):
         graph.print_info()
 
     utils.print_green("Guessing finished. Edges left: " + str(graph.number_missing_edges()))
-    graph.compute_reverse_edges(guessing = True)
+    graph.compute_reverse_edges(guessing = True, full_guessing = True)
     utils.print_green(f"Current query count: {query_count}")
     utils.print_green('Submitting!')
     graph.submit_guess()
