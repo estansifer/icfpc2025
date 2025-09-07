@@ -189,10 +189,10 @@ def build_dfs_tree(graph, N):
         nonlocal num_vis
         num_vis += 1
         vis[v.index] = True
-        path.append(v.code)
+        path.append(query.MultiMark(v.code))
         for i in v.bi_adjs():
             u = v.adj[i]
-            print(u)
+            print(u.index)
             if vis[u.index]:
                 continue
             path.append(query.doors[i])
@@ -232,6 +232,6 @@ def solve(task):
         graph.submit_guess()
 
 if __name__ == '__main__':
-    t = tasks.task_list[7]
+    t = tasks.task_list[6]
     interface.select(t.name)
     solve(t)

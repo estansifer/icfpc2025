@@ -16,6 +16,9 @@ class Door:
 
     def __str__(self):
         return str(self.d)
+
+    def __repr__(self):
+        return str(self.d)
     
 doors = [Door(d) for d in range(6)]
 
@@ -36,6 +39,12 @@ class MultiMark:
     def __init__(self, code):
         self.m = code
         self.is_door = False
+
+    def __str__(self):
+        return str(self.m)
+
+    def __repr__(self):
+        return str(self.m)
 
 # Represents a specific node visited at a specific time within a specific expedition
 class Visit:
