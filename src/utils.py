@@ -4,6 +4,14 @@ prod = True
 
 def guess(path):
     if prod:
+        return interface.explore(path)['results']
+    else:
+        print(path)
+        res = input()
+        return [int(c) for c in res]
+
+def guess_unbatched(path):
+    if prod:
         return interface.explore([path])['results'][0]
     else:
         print(path)

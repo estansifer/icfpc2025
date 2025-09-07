@@ -14,13 +14,13 @@ class Graph:
     # edge_from_parent -> desc
     def __init__(self, max_n):
         self.n = 1
-        self.edge = [[-1] * DOORS for _ in range(max_n + 2)]
-        self.letter = [0] * (max_n + 2)
-        self.letter[1] = utils.guess("")[0]
-        self.mst = [[] for _ in range(max_n + 2)]
-        self.parent = [-1] * (max_n + 2)
-        self.edge_from_parent = [-1] * (max_n + 2)
-        self.edge_to_parent = [-1] * (max_n + 2)
+        self.edge = [[-1] * DOORS for _ in range(max_n * 10)]
+        self.letter = [0] * (max_n * 10)
+        self.letter[1] = utils.guess_unbatched("")[0]
+        self.mst = [[] for _ in range(max_n * 10)]
+        self.parent = [-1] * (max_n * 10)
+        self.edge_from_parent = [-1] * (max_n * 10)
+        self.edge_to_parent = [-1] * (max_n * 10)
 
     def get_new_edge(self):
         for i in range(1, self.n + 1):
@@ -41,18 +41,39 @@ class Graph:
     def find_backwards_edge(self, v):
         utils.print_green("Finding backwards edge")
         path = self.path_to_edge(v)
+        paths = []
+        paths2 = []
         for back_edge in range(DOORS):
             new_path = path + str(back_edge)
-            res = utils.guess(new_path)
-            self.letter[v] = res[-2]
             parent_letter = self.letter[self.parent[v]]
-            if res[-1] != parent_letter and back_edge > 0:
-                continue
             new_path2 = path[:-1] + "[" + str(utils.different(parent_letter)) + "]" + str(self.edge_from_parent[v]) + str(back_edge)
-            res2 = utils.guess(new_path2)
-            if res[-2] != res2[-2]:
-                return -1
-            if res[-1] == parent_letter and res2[-1] != parent_letter:
+            paths.append(new_path)
+            if back_edge == 0:
+                paths2.append(new_path2)
+        paths.append(paths2[0])
+        res = utils.guess(paths)
+        paths2 = []
+
+        self.letter[v] = res[0][-2]
+        if res[0][-2] != res[-1][-2]:
+            return -1
+        
+        for back_edge in range(DOORS):
+            new_path2 = path[:-1] + "[" + str(utils.different(parent_letter)) + "]" + str(self.edge_from_parent[v]) + str(back_edge)
+            if back_edge != 0 and res[back_edge][-1] == parent_letter:
+                paths2.append(new_path2)
+        res2 = utils.guess(paths2)
+        itt = 0
+        for back_edge in range(DOORS):
+            if res[back_edge][-1] != parent_letter:
+                continue
+            rres = []
+            if back_edge == 0:
+                rres = res[-1]
+            else:
+                rres = res2[itt]
+                itt += 1
+            if rres[-1] != parent_letter:
                 return back_edge
 
     def traverse_for_repeats(self, v):
@@ -84,7 +105,7 @@ class Graph:
         # print(path_back)
         # print(dfs_path)
         path_sum = path_te + "[" + str(utils.different(self.letter[orgv])) + "]" + path_back + dfs_path
-        res = utils.guess(path_sum)
+        res = utils.guess_unbatched(path_sum)
         # print(path_sum)
         # print(dfs_path)
         # print(order)
@@ -133,7 +154,7 @@ class Graph:
 
     def answer(self):
         map = {
-            "rooms": self.letter[1:-1],
+            "rooms": self.letter[1 : (self.n + 1)],
             "startingRoom": 0,
             "connections": []
         }
