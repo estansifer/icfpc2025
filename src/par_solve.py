@@ -257,7 +257,7 @@ def print_path(graph, path):
             print("[" + str(graph.code2node[x.m].index) + "]", end=" ")
     print()
 
-def solve(task):
+def solve(task, num_tries = 6):
     k = choose_k(task)
     utils.print_green(f'Solving task {task.name} with {task.N} nodes and k = {k}')
 
@@ -277,24 +277,29 @@ def solve(task):
     dfs_path = build_dfs_tree(graph, task.N, k)
     print_path(graph, dfs_path)
 
-    while graph.number_missing_edges() > 0:
+    all_queries = []
+    for _ in range(num_tries):
+        all_queries += query.parallel_queries_custom(dfs_path, k)
+    query_count = query.submit_batch(all_queries)
+
+    for i in range(num_tries):
         utils.print_green("Edges left: " + str(graph.number_missing_edges()) + ". Trying again")
 
-        qs = query.parallel_queries_custom(dfs_path, k)
-        query_count = query.submit_batch(qs)
-        utils.print_green(f"Current query count: {query_count}")
-        if query_count > 42:
-            utils.print_red(f'Did {query_count} queries and still failed, sad')
-            return
+        qs = all_queries[i*k:(i+1)*k]
+        # if query_count > 60:
+            # utils.print_red(f'Did {query_count} queries and still failed, sad')
+            # return
 
         interpret_parallel_queries_again(graph, qs)
         graph.print_info()
         graph.compute_reverse_edges()
         graph.print_info()
 
-    if graph.number_missing_edges() == 0:
-        utils.print_green('Submitting!')
-        graph.submit_guess()
+    utils.print_green("Guessing finished. Edges left: " + str(graph.number_missing_edges()))
+    graph.compute_reverse_edges(guessing = True)
+    utils.print_green(f"Current query count: {query_count}")
+    utils.print_green('Submitting!')
+    graph.submit_guess()
 
 if __name__ == '__main__':
     task_no = 7
