@@ -162,8 +162,7 @@ def solve4(task):
         print('Submitting!')
         graph.submit_guess()
 
-def solve(task):
-    N = task.N
+def choose_k(task):
     k = 5
     if N < 70:
         k = 4
@@ -171,12 +170,10 @@ def solve(task):
         k = 3
     if N <= 12:
         k = 2
+    return k
 
-    k = 5
-
-    qs = query.parallel_queries(task, k)
-    query.submit_batch(qs)
-
+def interpret_parallel_queries(qs):
+    k = len(qs)
     graph = Graph()
     code2node = {}
     prev_node = None
@@ -215,6 +212,17 @@ def solve(task):
             assert not (code in code2node)
             cur_node.code = code
             code2node[code] = cur_node
+
+    return (graph, code2node)
+
+def solve(task):
+    # k = choose_k(task)
+    k = 5
+
+    qs = query.parallel_queries(task, k)
+    query.submit_batch(qs)
+
+    graph, code2node = interpret_parallel_queries(qs)
 
     graph.print_info()
     graph.compute_reverse_edges()

@@ -32,6 +32,11 @@ class Mark:
 
 marks = [Mark(m) for m in range(4)]
 
+class MultiMark:
+    def __init__(self, code):
+        self.m = code
+        self.is_door = False
+
 # Represents a specific node visited at a specific time within a specific expedition
 class Visit:
     # q: Query
@@ -211,6 +216,18 @@ def parallel_queries(task = None, k = 4):
 
     queries = [Query(task).custom_query(a) for a in actions]
     return queries
+
+# List of Door and MultiMark
+def parallel_queries_custom(actions, k, task = None):
+    if task is None:
+        task = tasks.get_active_task()
+
+    actions2 = [[] for i in range(k)]
+    for a in actions:
+        if a.is_door:
+            for i in range(k):
+                actions2[i].append(a)
+        else:
 
 def submit_batch(queries):
     if len(queries) == 0:
