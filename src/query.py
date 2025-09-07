@@ -217,10 +217,18 @@ def parallel_queries(task = None, k = 4):
     queries = [Query(task).custom_query(a) for a in actions]
     return queries
 
-# List of Door and MultiMark
-def parallel_queries_custom(actions, k, task = None):
+# actions is a list of Door and MultiMark
+def parallel_queries_custom(actions, k, extend_with_random_doors = True, task = None):
     if task is None:
         task = tasks.get_active_task()
+
+    if extend_with_random_doors:
+        num_doors = 0
+        for a in actions:
+            if a.is_door:
+                num_doors += 1
+        if num_doors < task.query_length:
+            actions = actions + r(doors, k = task.query_length - num_doors)
 
     actions2 = [[] for i in range(k)]
     for a in actions:
@@ -228,7 +236,13 @@ def parallel_queries_custom(actions, k, task = None):
             for i in range(k):
                 actions2[i].append(a)
         else:
-            pass
+            # MultiMark
+            assert len(a.m) == k
+            for i in range(k):
+                actions2[i].append(marks[a.m[i]])
+
+    queries = [Query(task).custom_query(a) for a in actions2]
+    return queries
 
 def submit_batch(queries):
     if len(queries) == 0:
@@ -243,9 +257,12 @@ def submit_batch(queries):
     return query_count
 
 if __name__ == '__main__':
-    qs = parallel_queries(k = 3)
+    qs = parallel_queries_custom([doors[0], doors[1], MultiMark((2, 1)), doors[2], MultiMark((0, 3)), doors[0]], k = 2)
     for q in qs:
         print(q.query_string)
+    # qs = parallel_queries(k = 3)
+    # for q in qs:
+        # print(q.query_string)
 
     # q = Query()
     # print(q.query_string)
