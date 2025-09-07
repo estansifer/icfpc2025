@@ -30,7 +30,7 @@ class Graph:
                     count += 1
         return count
 
-    def compute_reverse_edges(self):
+    def compute_reverse_edges(self, guessing = False):
         reverse_edges_deduced = 0
         reverse_edges_guessed = 0
         for n in self.nodes:
@@ -50,21 +50,20 @@ class Graph:
 
                     if not done:
                         count_none = sum([n3 is None for n3 in n2.adj])
-                        if count_none == 0:
-                            print(n.index, i, n2.index)
-                            print([n3.index for n3 in n2.adj])
                         assert count_none > 0
                         if count_none == 1:
                             reverse_edges_deduced += 1
                         else:
-                            print('Guessing which edge goes back...', n.index, i, n2.index)
-                            reverse_edges_guessed += 1
-                        for j in range(6):
-                            if n2.adj[j] is None:
-                                n2.adj[j] = n
-                                n2.adj_back[j] = i
-                                n.adj_back[i] = j
-                                break
+                            if guessing:
+                                print('Guessing which edge goes back...', n.index, i, n2.index)
+                                reverse_edges_guessed += 1
+                        if count_none == 1 or guessing:
+                            for j in range(6):
+                                if n2.adj[j] is None:
+                                    n2.adj[j] = n
+                                    n2.adj_back[j] = i
+                                    n.adj_back[i] = j
+                                    break
 
         if self.number_missing_edges() == 1:
             # Missing a self-loop, nothing else
@@ -77,6 +76,23 @@ class Graph:
 
         print('Reverse edges deduced:', reverse_edges_deduced)
         print('Reverse edges guessed:', reverse_edges_guessed)
+
+    def print_info(self):
+        def pr_node(n):
+            if n is None:
+                return '  -'
+            else:
+                return f'{n.index:3d}'
+        def pr_back(i):
+            if i is None:
+                return '-'
+            else:
+                return str(i)
+        print(f'Graph with {len(self.nodes)} nodes, missing {self.number_missing_edges()} edges')
+        for node in self.nodes:
+            adjs = ''.join([pr_node(n) for n in node.adj])
+            adj_backs = ''.join([pr_back(i) for i in node.adj_back])
+            print(f'   {node.index:2d}  {node.label}   {adjs}  {adj_backs}  {node.code}')
 
     def submit_guess(self):
         assert self.number_missing_edges() == 0
@@ -102,6 +118,42 @@ class Graph:
         result = interface.guess(map)
         print('Correct?', result)
 
+def solve4(task):
+    N = task.N
+    assert N == 3
+
+    q = query.Query(task)
+    q.submit()
+
+    graph = Graph()
+    code2node = {
+            0 : graph.new_node(0),
+            1 : graph.new_node(1),
+            2 : graph.new_node(2)
+        }
+    prev_node = None
+    cur_node = code2node[q.raw_response[0]]
+
+    for i, act in enumerate(q.query):
+        prev_node = cur_node
+        code = q.raw_response[i + 1]
+        cur_node = code2node[code]
+
+        if prev_node.adj[act.d] is None:
+            prev_node.adj[act.d] = cur_node
+        else:
+            assert prev_node.adj[act.d] is cur_node
+
+    print('Missing edges:', graph.number_missing_edges())
+    graph.compute_reverse_edges()
+    for node in graph.nodes:
+        print('    ', node.index, node.label, node.code, [n.index for n in node.adj])
+    print('Missing edges:', graph.number_missing_edges())
+
+    if graph.number_missing_edges() == 0:
+        print('Submitting!')
+        graph.submit_guess()
+
 def solve(task):
     N = task.N
     k = 5
@@ -109,13 +161,13 @@ def solve(task):
         k = 4
     if N < 15:
         k = 3
+    if N <= 12:
+        k = 2
+
+    k = 5
 
     qs = query.parallel_queries(task, k)
     query.submit_batch(qs)
-
-    # for q in qs:
-        # print(q.query_string)
-        # print(IL(q.raw_response))
 
     graph = Graph()
     code2node = {}
@@ -156,25 +208,15 @@ def solve(task):
             cur_node.code = code
             code2node[code] = cur_node
 
-    print('Distinct nodes:', len(graph.nodes))
-    def pr_node(n):
-        if n is None:
-            return 'N'
-        else:
-            return n.index
-    for node in graph.nodes:
-        print('    ', node.index, node.label, node.code, [pr_node(n) for n in node.adj])
-    print('Missing edges:', graph.number_missing_edges())
+    graph.print_info()
     graph.compute_reverse_edges()
-    for node in graph.nodes:
-        print('    ', node.index, node.label, node.code, [pr_node(n) for n in node.adj])
-    print('Missing edges:', graph.number_missing_edges())
+    graph.print_info()
 
     if graph.number_missing_edges() == 0:
         print('Submitting!')
         graph.submit_guess()
 
 if __name__ == '__main__':
-    t = tasks.task_list[5]
+    t = tasks.task_list[7]
     interface.select(t.name)
     solve(t)
