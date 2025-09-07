@@ -228,6 +228,7 @@ def parallel_queries_custom(actions, k, task = None):
             for i in range(k):
                 actions2[i].append(a)
         else:
+            pass
 
 def submit_batch(queries):
     if len(queries) == 0:
