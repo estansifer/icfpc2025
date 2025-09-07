@@ -24,6 +24,7 @@ class Node:
 class Graph:
     def __init__(self):
         self.nodes = []
+        self.code2node = {}
 
     def new_node(self, label):
         node = Node(len(self.nodes), label)
@@ -175,7 +176,7 @@ def choose_k(task):
 def interpret_parallel_queries(qs):
     k = len(qs)
     graph = Graph()
-    code2node = {}
+    code2node = graph.code2node
     prev_node = None
     cur_node = graph.new_node(qs[0].raw_response[0])
     cur_node.code = tuple([cur_node.label] * k)
@@ -213,7 +214,7 @@ def interpret_parallel_queries(qs):
             cur_node.code = code
             code2node[code] = cur_node
 
-    return (graph, code2node)
+    return graph
 
 def solve(task):
     # k = choose_k(task)
@@ -222,7 +223,7 @@ def solve(task):
     qs = query.parallel_queries(task, k)
     query.submit_batch(qs)
 
-    graph, code2node = interpret_parallel_queries(qs)
+    graph = interpret_parallel_queries(qs)
 
     graph.print_info()
     graph.compute_reverse_edges()
