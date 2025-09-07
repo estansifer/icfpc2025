@@ -275,21 +275,23 @@ def solve(task):
     dfs_path = build_dfs_tree(graph, task.N, k)
     print_path(graph, dfs_path)
 
-    # while graph.number_missing_edges > 0:
-        # utils.print_green("Edges left: " + str(graph.number_missing_edges) + ". Trying again")
-        # queries = query.parallel_queries_custom(path, k=k)
-        # server_resp = query.submit_batch(queries)
+    while graph.number_missing_edges() > 0:
+        utils.print_green("Edges left: " + str(graph.number_missing_edges()) + ". Trying again")
 
-    qs = query.parallel_queries_custom(dfs_path, k)
-    query.submit_batch(qs)
-    interpret_parallel_queries_again(graph, qs)
-    graph.print_info()
-    graph.compute_reverse_edges()
-    graph.print_info()
+        qs = query.parallel_queries_custom(dfs_path, k)
+        query_count = query.submit_batch(qs)
+        if query_count > 30:
+            utils.print_red(f'Did {query_count} queries and still failed, sad')
+            return
+
+        interpret_parallel_queries_again(graph, qs)
+        graph.print_info()
+        graph.compute_reverse_edges()
+        graph.print_info()
 
     if graph.number_missing_edges() == 0:
         utils.print_green('Submitting!')
-        # graph.submit_guess()
+        graph.submit_guess()
 
 if __name__ == '__main__':
     task_no = 7
