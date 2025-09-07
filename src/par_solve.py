@@ -13,6 +13,14 @@ class Node:
         self.adj = [None] * 6
         self.adj_back = [None] * 6
 
+    def bi_adjs(self):
+        b = []
+        for i in range(6):
+            if self.adj[i] is None or self.adj_back[i] is None:
+                continue
+            b.append(i)
+        return b
+
 class Graph:
     def __init__(self):
         self.nodes = []
