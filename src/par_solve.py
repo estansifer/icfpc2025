@@ -31,7 +31,7 @@ class Graph:
     def new_node(self, label, code):
         node = Node(len(self.nodes), label, code)
         if code in self.code2node:
-            print('Uh oh! Duplicate code', code)
+            utils.print_red(f'Uh oh! Duplicate code {code}')
         self.code2node[code] = node
         self.nodes.append(node)
         return node
@@ -42,6 +42,28 @@ class Graph:
         assert not (code in self.code2node)
         node.code = code
         self.code2node[code] = node
+
+    def repaint_all_nodes(self):
+        k = 4
+        if len(self.nodes) <= 60:
+            k = 3
+        if len(self.nodes) <= 12:
+            k = 2
+
+        for n in self.nodes:
+            self.paint_node(n, n.code + (7,))
+
+        x = 1
+        for n in self.nodes:
+            code = query.base4(x, k)
+            x += 1
+            if len(set(code)) == 1:
+                code = query.base4(x, k)
+                x += 1
+
+            self.paint_node(n, tuple(code))
+
+        return k
 
     def number_missing_edges(self):
         count = 0
@@ -102,8 +124,8 @@ class Graph:
         print('Reverse edges deduced:', reverse_edges_deduced)
         print('Reverse edges guessed:', reverse_edges_guessed)
 
-    def print_info(self):
-        if not verbose_graph_info:
+    def print_info(self, verbose = verbose_graph_info):
+        if not verbose:
             return
 
         def pr_node(n):
@@ -222,24 +244,51 @@ def build_dfs_tree(graph, N, k):
     path = []
     num_vis = 0
     vis = [False] * N
-    def dfs(v, back):
+
+    def check_for_unique_unused_labels():
+        label2node = {}
+        for i in range(N):
+            if vis[i]:
+                continue
+            label = graph.nodes[i].label
+            if label in label2node:
+                label2node[label].append(graph.nodes[i])
+            else:
+                label2node[label] = [graph.nodes[i]]
+
+        for label in label2node:
+            nodes = label2node[label]
+            if len(nodes) == 1:
+                graph.code2node[tuple([label] * k)] = nodes[0]
+                vis[nodes[0].index] = True
+
+
+    def dfs(v):
         nonlocal num_vis
         num_vis += 1
         vis[v.index] = True
         path.append(query.MultiMark(v.code))
+        check_for_unique_unused_labels()
+        if all(vis):
+            return
+
         for i in v.bi_adjs():
             u = v.adj[i]
             if vis[u.index]:
                 continue
             path.append(query.doors[i])
-            dfs(u, v.adj_back[i])
-        if back != -1:
-            path.append(query.doors[back])
-    dfs(graph.nodes[0], -1)
+            dfs(u)
+            if all(vis):
+                return
+            path.append(query.doors[v.adj_back[i]])
+
+    dfs(graph.nodes[0])
+
     if num_vis != N:
         utils.print_green("Not all vertices in the spanning tree. Found: " + str(num_vis))
     else:
         utils.print_green("Marked all nodes!")
+
     used_labels = [False] * 4
     for v in range(N):
         if vis[v]:
@@ -274,8 +323,13 @@ def solve(task, num_tries = 6):
     graph.compute_reverse_edges()
     graph.print_info()
 
+    k = graph.repaint_all_nodes()
+
     if len(graph.nodes) < task.N:
         utils.print_red(f'Only found {len(graph.nodes)} of {task.N} nodes')
+        return
+    if len(graph.nodes) > task.N:
+        utils.print_red(f'Found {len(graph.nodes)} of {task.N} nodes!!')
         return
 
     dfs_path = build_dfs_tree(graph, task.N, k)

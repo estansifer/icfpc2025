@@ -258,6 +258,11 @@ def submit_batch(queries):
         return
 
     j = interface.explore([q.query_string for q in queries])
+    if not ('results' in j):
+        print('Cannot find results!')
+        print(len(queries))
+        print([q.query_string for q in queries])
+        print(j)
     results = j['results']
     query_count = j['queryCount']
     for i, q in enumerate(queries):
