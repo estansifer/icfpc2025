@@ -307,8 +307,11 @@ def solve(task, num_tries = 6):
 
 if __name__ == '__main__':
     task_no = 7
+    num_tries = 7
     if len(sys.argv) > 1:
         task_no = int(sys.argv[1])
+        if len(sys.argv) > 2:
+            num_tries = int(sys.argv[2])
     t = tasks.task_list[task_no]
     interface.select(t.name)
-    solve(t)
+    solve(t, num_tries)
