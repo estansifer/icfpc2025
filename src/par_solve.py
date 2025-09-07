@@ -211,7 +211,7 @@ def interpret_parallel_queries_again(graph, qs):
             # Previously seen edge
             assert prev_node.adj[act.d] is cur_node
 
-def build_dfs_tree(graph, N):
+def build_dfs_tree(graph, N, k):
     path = []
     num_vis = 0
     vis = [False] * N
@@ -230,8 +230,30 @@ def build_dfs_tree(graph, N):
             path.append(query.doors[back])
     dfs(graph.nodes[0], -1)
     if num_vis != N:
-        utils.print_red("WARNING: Not all vertices in the spanning tree!!!")
+        utils.print_green("Not all vertices in the spanning tree. Found: " + str(num_vis))
+    else:
+        utils.print_green("Marked all nodes!")
+    used_labels = [False] * 4
+    for v in range(N):
+        if vis[v]:
+            continue
+        v = graph.nodes[v]
+        if used_labels[v.label]:
+            utils.print_red("ERROR: Cannot uniqly mark nodes!!! Found: " + str(num_vis) + "\nRepreated label: " + str(v.label))
+            exit(1)
+        used_labels[v.label] = True
+        graph.code2node[tuple([v.label] * k)] = v
+        
     return path
+
+def print_path(graph, path):
+    for x in path:
+        if x.is_door:
+            print(x, end=" ")
+        else:
+            print("[" + str(graph.code2node[x.m].index) + "]", end=" ")
+    print()
+            
 
 def solve(task):
     # k = choose_k(task)
@@ -247,11 +269,11 @@ def solve(task):
     graph.print_info()
 
     if len(graph.nodes) < task.N:
-        print_red(f'Only found {len(graph.node)} of {task.N} nodes')
+        utils.print_red(f'Only found {len(graph.node)} of {task.N} nodes')
         return
 
-    dfs_path = build_dfs_tree(graph, task.N)
-    print(dfs_path)
+    dfs_path = build_dfs_tree(graph, task.N, k)
+    print_path(graph, dfs_path)
 
     # while graph.number_missing_edges > 0:
         # utils.print_green("Edges left: " + str(graph.number_missing_edges) + ". Trying again")
