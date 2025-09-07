@@ -6,10 +6,10 @@ import interface
 IL = utils.IntList
 
 class Node:
-    def __init__(self, index, label):
+    def __init__(self, index, label, code):
         self.index = index
         self.label = label
-        self.code = None
+        self.code = code
         self.adj = [None] * 6
         self.adj_back = [None] * 6
 
@@ -26,10 +26,20 @@ class Graph:
         self.nodes = []
         self.code2node = {}
 
-    def new_node(self, label):
-        node = Node(len(self.nodes), label)
+    def new_node(self, label, code):
+        node = Node(len(self.nodes), label, code)
+        if code in self.code2node:
+            print('Uh oh! Duplicate code', code)
+        self.code2node[code] = node
         self.nodes.append(node)
         return node
+
+    def paint_node(self, node, code):
+        assert self.code2node[node.code] is node
+        del self.code2node[node.code]
+        assert not (code in self.code2node)
+        node.code = code
+        self.code2node[code] = node
 
     def number_missing_edges(self):
         count = 0
@@ -134,7 +144,7 @@ def solve4(task):
     q = query.Query(task)
     q.submit()
 
-    graph = Graph()
+    graph = Graph(1)
     code2node = {
             0 : graph.new_node(0),
             1 : graph.new_node(1),
@@ -164,6 +174,7 @@ def solve4(task):
         graph.submit_guess()
 
 def choose_k(task):
+    N = task.N
     k = 5
     if N < 70:
         k = 4
@@ -173,27 +184,23 @@ def choose_k(task):
         k = 2
     return k
 
-def interpret_parallel_queries(qs):
+def interpret_parallel_queries(graph, qs):
     k = len(qs)
-    graph = Graph()
     code2node = graph.code2node
+
+    label0 = qs[0].raw_response[0]
+    code = tuple([label0] * k)
+    cur_node = graph.new_node(label0, code)
     prev_node = None
-    cur_node = graph.new_node(qs[0].raw_response[0])
-    cur_node.code = tuple([cur_node.label] * k)
-    code2node[cur_node.code] = cur_node
 
     for i, act in enumerate(qs[0].query):
+        code = tuple([q.raw_response[i + 1] for q in qs])
         if act.is_door:
             prev_node = cur_node
-            code = tuple([q.raw_response[i + 1] for q in qs])
 
             if len(set(code)) == 1:
                 # New node!
-                if code in code2node:
-                    print('Uh oh! Duplicate code', code, ' at position ', i)
-                cur_node = graph.new_node(code[0])
-                code2node[code] = cur_node
-                cur_node.code = code
+                cur_node = graph.new_node(code[0], code)
             else:
                 # Previously seen node
                 assert code in code2node
@@ -206,13 +213,7 @@ def interpret_parallel_queries(qs):
                 # Previously seen edge
                 assert prev_node.adj[act.d] is cur_node
         else:
-            # Painting a node
-            assert code2node[cur_node.code] is cur_node
-            del code2node[cur_node.code]
-            code = tuple([q.raw_response[i + 1] for q in qs])
-            assert not (code in code2node)
-            cur_node.code = code
-            code2node[code] = cur_node
+            graph.paint_node(cur_node, code)
 
     return graph
 
@@ -223,7 +224,8 @@ def solve(task):
     qs = query.parallel_queries(task, k)
     query.submit_batch(qs)
 
-    graph = interpret_parallel_queries(qs)
+    graph = Graph()
+    interpret_parallel_queries(graph, qs)
 
     graph.print_info()
     graph.compute_reverse_edges()
