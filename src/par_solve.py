@@ -167,6 +167,8 @@ class Graph:
 
         result = interface.guess(map)
         print('Correct?', result)
+        if not result:
+            exit(1)
 
 def choose_k(task):
     N = task.N
@@ -327,10 +329,10 @@ def solve(task, num_tries = 6):
 
     if len(graph.nodes) < task.N:
         utils.print_red(f'Only found {len(graph.nodes)} of {task.N} nodes')
-        return
+        exit(1)
     if len(graph.nodes) > task.N:
         utils.print_red(f'Found {len(graph.nodes)} of {task.N} nodes!!')
-        return
+        exit(1)
 
     dfs_path = build_dfs_tree(graph, task.N, k)
     print_path(graph, dfs_path)
