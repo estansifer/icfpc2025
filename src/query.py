@@ -30,6 +30,8 @@ class Mark:
     def __str__(self):
         return f'[{self.m}]'
 
+marks = [Mark(m) for m in range(4)]
+
 # Represents a specific node visited at a specific time within a specific expedition
 class Visit:
     # q: Query
@@ -42,6 +44,8 @@ class Visit:
         self.label = q.response[index]
         self.prev = None # Visit
         self.next = None # Visit
+
+        self.forwards = self.all_forward_path_and_labels(5)
 
     def ahead(self, k):
         if k == 0:
@@ -117,13 +121,23 @@ class Query:
 
         self.query_string = ''.join([str(act) for act in self.query])
 
+        return self
+
+    def random_query0(self):
+        q = []
+        while len(q) < self.query_length:
+            d = r(doors)[0]
+            q.append(d)
+
+        return self.custom_query(q)
+
     def random_query1(self):
         q = []
         while len(q) < self.query_length:
             d = r(doors, [5, 5, 2, 2, 2, 2])[0]
             q.append(d)
 
-        self.custom_query(q)
+        return self.custom_query(q)
 
     def random_query2(self):
         q = []
@@ -140,7 +154,7 @@ class Query:
                 q.append(doors[1])
                 q.append(doors[0])
 
-        self.custom_query(q)
+        return self.custom_query(q)
 
     def parse_response(self, response):
         self.raw_response = response
@@ -168,6 +182,36 @@ class Query:
 
         return query_count
 
+def base4(x, ndigits):
+    digits = [0] * ndigits
+    for i in range(ndigits):
+        digits[i] = x % 4
+        x = (x // 4)
+    if x > 0:
+        return None
+    return digits
+
+def parallel_queries(task = None, k = 4):
+    if task is None:
+        task = tasks.get_active_task()
+    cur_id = 1
+    actions = [[] for i in range(k)]
+    path = r(doors, k = task.query_length)
+    for d in path:
+        code = base4(cur_id, k)
+        cur_id += 1
+        if (not (code is None)) and len(set(code)) == 1:
+            code = base4(cur_id, k)
+            cur_id += 1
+
+        for i in range(k):
+            actions[i].append(d)
+            if not (code is None):
+                actions[i].append(marks[code[i]])
+
+    queries = [Query(task).custom_query(a) for a in actions]
+    return queries
+
 def submit_batch(queries):
     if len(queries) == 0:
         return
@@ -181,9 +225,13 @@ def submit_batch(queries):
     return query_count
 
 if __name__ == '__main__':
-    q = Query()
-    print(q.query_string)
-    q.custom_query([Door(0), Mark(3), Door(1)], error_if_too_short = False)
-    print(q.query_string)
-    q.random_query2()
-    print(q.query_string)
+    qs = parallel_queries(k = 3)
+    for q in qs:
+        print(q.query_string)
+
+    # q = Query()
+    # print(q.query_string)
+    # q.custom_query([Door(0), Mark(3), Door(1)], error_if_too_short = False)
+    # print(q.query_string)
+    # q.random_query2()
+    # print(q.query_string)

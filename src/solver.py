@@ -19,7 +19,7 @@ class NodeInfo:
         # paths and labels are stored as IntLists
         signature = {}
         for v in visits:
-            for path, labels in v.all_forward_path_and_labels(max_forward):
+            for path, labels in v.forwards: # max_forward = 5
                 self.doors_observed[path.values[0]] = True
                 if path in signature:
                     if type(signature[path]) is set:
@@ -33,6 +33,10 @@ class NodeInfo:
                     signature[path] = labels
         self.signature = signature
 
+        self.strength = len(self.visits) + 8 * sum(self.doors_observed)
+        if not self.consistent:
+            self.strength = 0
+
     def reduced_signature(self):
         sig = {}
         paths = set(self.signature.keys())
@@ -41,7 +45,7 @@ class NodeInfo:
                 p2 = path.drop_last()
                 if p2 in paths:
                     paths.remove(p2)
-        for path in paths:
+        for path in sorted(paths):
             sig[path] = self.signature[path]
         return sig
 
@@ -68,7 +72,7 @@ class Knowledge:
     def compute_pl2node(self, max_length = 4):
         self.pl2visits = {}
         for v in self.visits:
-            for path, labels in v.all_forward_path_and_labels(max_length):
+            for path, labels in v.forwards: # max_forward = 5
                 pl = utils.PathWithLabels(path, labels)
                 v2 = v.ahead(pl.n)
                 if pl in self.pl2visits:
