@@ -7,6 +7,8 @@ import interface
 
 verbose_graph_info = False
 
+all_node_groups = []
+
 class Node:
     def __init__(self, index, label, code):
         self.index = index
@@ -14,6 +16,7 @@ class Node:
         self.code = code
         self.adj = [None] * 6
         self.adj_back = [None] * 6
+        self.node_group = None
 
     def bi_adjs(self):
         b = []
@@ -23,15 +26,79 @@ class Node:
             b.append(i)
         return b
 
+    def similarity(self, other):
+        if self.label != other.label:
+            return 0
+        count = 1
+        for i in range(6):
+            if None in [self.adj[i], other.adj[i]]:
+                continue
+            if self.adj[i].label == other.adj[i].label:
+                count += 1
+            else:
+                return 0
+        return count
+
+    def siblings(self):
+        nodes = []
+        for node in self.node_group.nodes:
+            if not (node is self):
+                nodes.append(node)
+        return nodes
+
+class NodeGroup:
+    def __init__(self, nodes):
+        all_node_groups.append(self)
+        assert len(nodes) >= 2
+        self.nodes = list(nodes)
+        self.adj = [None] * 6
+
+        for node in nodes:
+            assert node.node_group is None
+            node.node_group = self
+
+        self.floodfill()
+
+    def __str__(self):
+        ns = sorted([n.index for n in self.nodes])
+        return ' '.join([f'{n:2d}' for n in ns])
+
+    def __repr__(self):
+        return str(self)
+
+    def floodfill(self):
+        for i in range(6):
+            nodes = []
+            for n in self.nodes:
+                if n.adj[i] is None:
+                    continue
+                nodes.append(n.adj[i])
+            ng = self.adj[i]
+            for n in nodes:
+                if not (n.node_group is None):
+                    ng = n.node_group
+            if ng is None:
+                if len(nodes) >= 2:
+                    ng = NodeGroup(nodes)
+                else:
+                    continue
+            self.adj[i] = ng
+            for n in nodes:
+                if n.node_group is None:
+                    n.node_group = ng
+                    ng.nodes.append(n)
+                    ng.floodfill()
+
 class Graph:
     def __init__(self):
         self.nodes = []
+        self.node_groups = []
         self.code2node = {}
 
     def new_node(self, label, code):
         node = Node(len(self.nodes), label, code)
         if code in self.code2node:
-            utils.print_red(f'Uh oh! Duplicate code {code}')
+            utils.print_red(f'----Uh oh! Duplicate code {code}')
         self.code2node[code] = node
         self.nodes.append(node)
         return node
@@ -72,6 +139,104 @@ class Graph:
                 if a is None:
                     count += 1
         return count
+
+    def compute_node_groups(self, mirrors):
+        N = len(self.nodes)
+        similarity = []
+        for i in range(N):
+            for j in range(i + 1, N):
+                s = self.nodes[i].similarity(self.nodes[j])
+                similarity.append((s, i, j, self.nodes[i], self.nodes[j]))
+        similarity.sort(reverse = True)
+
+        while True:
+            nones = 0
+            for node in self.nodes:
+                if node.node_group is None:
+                    nones += 1
+            print('Number of nodes with None for node group:', nones)
+            if nones == 0:
+                break
+
+            for s, i, j, ni, nj in similarity:
+                if not (None in [ni.node_group, nj.node_group]):
+                    continue
+
+                print(f'Next most similar pair are nodes {i} and {j} with similarity of {s}')
+                NodeGroup([ni, nj])
+                break
+
+        for ng in all_node_groups:
+            ng.floodfill()
+
+        # Check consistency...
+        assert len(all_node_groups) * mirrors == N
+        for ng in all_node_groups:
+            print('   ', ng, '  ->  ', ng.adj)
+            # assert not (None in ng.adj)
+        for node in self.nodes:
+            assert len(node.node_group.nodes) == mirrors
+            for i in range(6):
+                assert (None in [node.adj[i], node.node_group.adj[i]]) or (node.adj[i].node_group is node.node_group.adj[i])
+
+    def deduce_from_node_groups(self):
+        forward_edges_deduced = 0
+        reverse_edges_deduced = 0
+
+        for n in self.nodes:
+            ng = n.node_group
+            siblings = n.siblings()
+            for i in range(6):
+                if n.adj[i] is None:
+                    # Check if other nodes in group are resolved...
+                    any_missing = False
+                    for n2 in siblings:
+                        if n2.adj[i] is None:
+                            any_missing = True
+                    if any_missing:
+                        continue
+
+                    # All siblings are resolved, so we can deduce the target
+                    targets = list(siblings[0].adj[i].node_group.nodes)
+                    for n2 in siblings:
+                        targets.remove(n2.adj[i])
+                    assert len(targets) == 1
+                    n.adj[i] = targets[0]
+                    forward_edges_deduced += 1
+
+                if not (n.adj_back[i] is None):
+                    continue
+                # Deduce reverse edges
+                n2 = n.adj[i]
+                done = False
+                for j in range(6):
+                    if (n2.adj[j] is n) and (n2.adj_back[j] is None):
+                        n2.adj_back[j] = i
+                        n.adj_back[i] = j
+                        done = True
+                        break
+
+                if done:
+                    continue
+
+                valid = [None] * 6
+                for j in range(6):
+                    if n2.adj[j] is None:
+                        valid[j] = (ng is n2.node_group.adj[j])
+                    else:
+                        valid[j] = False
+
+                if sum(valid) == 1:
+                    for j in range(6):
+                        if valid[j]:
+                            n2.adj[j] = n
+                            n2.adj_back[j] = i
+                            n.adj_back[i] = j
+                            reverse_edges_deduced += 1
+                            break
+
+        print('Forward edges deduced:', forward_edges_deduced)
+        print('Reverse edges deduced:', reverse_edges_deduced)
 
     def compute_reverse_edges(self, guessing = False, full_guessing = False):
         reverse_edges_deduced = 0
@@ -195,13 +360,13 @@ def interpret_parallel_queries(graph, qs):
         if act.is_door:
             prev_node = cur_node
 
-            if len(set(code)) == 1:
-                # New node!
-                cur_node = graph.new_node(code[0], code)
-            else:
-                # Previously seen node
-                assert code in code2node
+            if code in graph.code2node:
                 cur_node = code2node[code]
+                if len(set(code)) == 1:
+                    utils.print_red(f'Uh oh! Potential duplicate code {code}')
+            else:
+                assert len(set(code)) == 1
+                cur_node = graph.new_node(code[0], code)
 
             # Assign edge
             if prev_node.adj[act.d] is None:
@@ -317,22 +482,33 @@ def solve(task, num_tries = 6):
     utils.print_green(f'Solving task {task.name} with {task.N} nodes and k = {k}')
 
     qs = query.parallel_queries(task, k)
-    query.submit_batch(qs)
+    query_count = query.submit_batch(qs)
 
     graph = Graph()
     interpret_parallel_queries(graph, qs)
     graph.print_info()
-    graph.compute_reverse_edges()
-    graph.print_info()
-
-    k = graph.repaint_all_nodes()
-
     if len(graph.nodes) < task.N:
         utils.print_red(f'Only found {len(graph.nodes)} of {task.N} nodes')
         exit(1)
     if len(graph.nodes) > task.N:
         utils.print_red(f'Found {len(graph.nodes)} of {task.N} nodes!!')
         exit(1)
+
+    graph.compute_node_groups(task.mirrors)
+    graph.deduce_from_node_groups()
+    graph.compute_reverse_edges()
+    graph.deduce_from_node_groups()
+    graph.compute_reverse_edges()
+    graph.print_info()
+
+    if graph.number_missing_edges() <= 5:
+        graph.compute_reverse_edges(guessing = True, full_guessing = True)
+        utils.print_green(f"Current query count: {query_count}")
+        utils.print_green('Submitting!')
+        graph.submit_guess()
+        return
+
+    k = graph.repaint_all_nodes()
 
     dfs_path = build_dfs_tree(graph, task.N, k)
     print_path(graph, dfs_path)
@@ -352,6 +528,9 @@ def solve(task, num_tries = 6):
 
         interpret_parallel_queries_again(graph, qs)
         graph.print_info()
+        graph.deduce_from_node_groups()
+        graph.compute_reverse_edges()
+        graph.deduce_from_node_groups()
         graph.compute_reverse_edges()
         graph.print_info()
 
@@ -362,8 +541,8 @@ def solve(task, num_tries = 6):
     graph.submit_guess()
 
 if __name__ == '__main__':
-    task_no = 7
-    num_tries = 7
+    task_no = 6
+    num_tries = 1
     if len(sys.argv) > 1:
         task_no = int(sys.argv[1])
         if len(sys.argv) > 2:
