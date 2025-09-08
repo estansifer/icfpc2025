@@ -33,6 +33,9 @@ class Mark:
     def __str__(self):
         return f'[{self.m}]'
 
+    def __repr__(self):
+        return f'[{self.m}]'
+
 marks = [Mark(m) for m in range(4)]
 
 class MultiMark:
@@ -170,6 +173,14 @@ class Query:
 
         return self.custom_query(q)
 
+    def random_query3(self):
+        q = []
+        while len(q) < 2 * self.query_length:
+            q.append(r(marks)[0])
+            q.append(r(doors)[0])
+
+        return self.custom_query(q)
+
     def parse_response(self, response):
         self.raw_response = response
         assert len(self.query) + 1 == len(self.raw_response)
@@ -205,12 +216,14 @@ def base4(x, ndigits):
         return None
     return digits
 
-def parallel_queries(task = None, k = 4):
+def parallel_queries(task = None, k = 4, truncate = None):
     if task is None:
         task = tasks.get_active_task()
     cur_id = 1
     actions = [[] for i in range(k)]
+
     path = r(doors, k = task.query_length)
+
     for d in path:
         code = base4(cur_id, k)
         cur_id += 1
@@ -222,6 +235,16 @@ def parallel_queries(task = None, k = 4):
             if not (code is None):
                 actions[i].append(marks[code[i]])
             actions[i].append(d)
+
+    if truncate:
+        print(f'Truncating from {len(actions[0])} to {truncate}')
+        for i in range(k):
+            n = len(actions[i])
+            assert truncate < n
+            actions[i] = actions[i][:truncate]
+            for j in range(n - truncate):
+                actions[i].append(r(marks)[0])
+                actions[i].append(r(doors)[0])
 
     queries = [Query(task).custom_query(a) for a in actions]
     return queries
@@ -271,9 +294,20 @@ def submit_batch(queries):
     return query_count
 
 if __name__ == '__main__':
-    qs = parallel_queries_custom([doors[0], doors[1], MultiMark((2, 1)), doors[2], MultiMark((0, 3)), doors[0]], k = 2)
-    for q in qs:
-        print(q.query_string)
+    interface.select(tasks.task_list[1].name)
+    q = Query()
+    q.random_query0()
+    q.submit()
+    print(q.query_string)
+    print(utils.IntList(q.response))
+    counts = [0] * 4
+    for l in q.response:
+        counts[l] += 1
+    print(counts)
+
+    # qs = parallel_queries_custom([doors[0], doors[1], MultiMark((2, 1)), doors[2], MultiMark((0, 3)), doors[0]], k = 2)
+    # for q in qs:
+        # print(q.query_string)
     # qs = parallel_queries(k = 3)
     # for q in qs:
         # print(q.query_string)
