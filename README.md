@@ -11,10 +11,16 @@ We had a huge amount of fun with the contest this year!
 ## v1
 
 First solver was a deterministic solver that used individual queries to explore
-each door one at a time, using relabelings to verify which rooms are which.
+each door one at a time, using relabelings to verify if a room repeats on our path
+(we ran two paths, one with and one without the label).
+We would explore a vertex behind an unknown door by first checking all edges to
+find the returning one (using markings), and then relabeling the new vertex and
+traversing the whole graph to see if it's indeed new or another label changed
+(then we merge with an existing vertex).
 This brought us to top 15 even though we used thousands of expeditions per
 problem, as very few teams had any submissions to the full round problems at
-this time.
+this time. While we had ideas on how to improve this exact algorithm, we could
+barely do it by a constant of 2, which was not enough to challenge the top teams.
 
 The rest of the contest we found successively better solutions, but the effect was
 merely to maintain our standing, and not to advance.
@@ -25,7 +31,7 @@ Next solver issued k concurrent queries, each with the same completely random
 path, but with different relabelings. In this way the labels can distinguish
 4^k - 4 different nodes (the minus 4 is because we do not use the labels
 (0, 0, ..., 0), (1, 1, ..., 1), (2, 2, ..., 2), (3, 3, ..., 3) so that we can
-distinguish new nodes and nodes we have relabeled).
+distinguish new nodes from nodes we have relabeled).
 
 A single random path passes through each door an average of 3 times in each
 direction for the first five problems, so while some doors are missed, enough
@@ -41,17 +47,20 @@ an average of 1 time each direction, so a large amount of the graph will
 still be missing. 
 
 To fix this, after the initial slew of queries, we do another set of parallel
-k queries, which starts with a DFS of the distinct nodes, granting each of
+k queries, which starts with a DFS over the distinct nodes, granting each of
 them a unique label, and then performs a random walk. This random walk will
-hit about 2/3 to 3/4 of unexplored doors. Repeating this enough times we had
-enough information to deduce the missing doors. 
+hit about 2/3 to 3/4 of unexplored doors (and for each door we know both ends
+from the k combined labels). Repeating this enough times gave us enough
+information to deduce the missing doors. 
 
 This brought our score on the later problems down to 30 or less.
 
 ## v4
 
 A long series of small refinements and optimizations brought our score down to
-15 or less for most problems.
+15 or less for most problems. These included deducting missing vertices (if there
+were few enough) and returning edges, as well as optimising our DFS walk to get
+longer remaining paths and batching all the follow-up requests.
 
 ## v5
 
